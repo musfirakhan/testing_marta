@@ -690,8 +690,8 @@ class AnimationHandler:
 
     def set_box_properties(self, walls_texture_path, floor_texture_path, ceiling_texture_path,
                         walls_texture_coords='UV', floor_texture_coords='UV', ceiling_texture_coords='UV',
-                        walls_mapping_scale=(8,8, 8), floor_mapping_scale=(8, 8, 8), ceiling_mapping_scale=(8, 8, 8),
-                        walls_mapping_rotation=(0, 0, 0), floor_mapping_rotation=(0, 0, 0), ceiling_mapping_rotation=(0, 0, 0),
+                        walls_mapping_scale=(1,1, 1), floor_mapping_scale=(1, 1, 1), ceiling_mapping_scale=(1, 1, 1),
+                        walls_mapping_rotation=(0, 0, 1.5708), floor_mapping_rotation=(0, 0, 0), ceiling_mapping_rotation=(0, 0, 0),
                         walls_mapping_translation=(0, 0, 0), floor_mapping_translation=(0, 0, 0), ceiling_mapping_translation=(0, 0, 0)):
         """Set properties of the box with specific textures and mapping settings"""
         if not self.box_object:
@@ -731,9 +731,9 @@ class AnimationHandler:
 
         # Set mapping properties for walls material
         mapping1.inputs['Scale'].default_value = walls_mapping_scale
-        mapping1.inputs['Rotation'].default_value = walls_mapping_rotation
         if 'Translation' in mapping1.inputs:
             mapping1.inputs['Translation'].default_value = walls_mapping_translation
+        mapping1.inputs['Rotation'].default_value = walls_mapping_rotation
 
         # Create texture coordinate and mapping nodes for floor material
         tex_coord2 = floor.node_tree.nodes.new('ShaderNodeTexCoord')
@@ -808,7 +808,7 @@ class AnimationHandler:
 
 
 
-    def create_light(self, light_type='SUN', color=(1, 1, 1), energy=10):
+    def create_light(self, light_type='SUN', color=(1, 1, 1), energy=8):
         """Create a light source in the scene"""
         if not self.box_object:
             raise ValueError("Box object not found. Create the box first.")
@@ -834,7 +834,7 @@ class AnimationHandler:
         light_data2 = bpy.data.lights.new(name="Light_Source_1", type=light_type)
         light_data2.color = color
         light_data2.energy = energy
-        light_object2 = bpy.data.objects.new(name="Light_Source", object_data=light_data2)
+        light_object2 = bpy.data.objects.new(name="Light_Source_1", object_data=light_data2)
         bpy.context.collection.objects.link(light_object2)
 
         # Position the light inside the upper side of the box like a ceiling light
@@ -847,7 +847,21 @@ class AnimationHandler:
         light_object2.rotation_euler = (-13.3724, 56.947, -0.923632)
         light_object2.data.use_shadow=False
 
+        light_data3 = bpy.data.lights.new(name="Light_Source_2", type=light_type)
+        light_data3.color = color
+        light_data3.energy = energy
+        light_object3 = bpy.data.objects.new(name="Light_Source_2", object_data=light_data3)
+        bpy.context.collection.objects.link(light_object3)
 
+        # Position the light inside the upper side of the box like a ceiling light
+        light_object3.location = (box_location.x, box_location.y, box_location.z - 2)
+
+        # Point the light at the center of the box
+        direction = Vector((box_location.x, box_location.y, box_location.z)) - light_object2.location
+        rot_quat = direction.to_track_quat('-Z', 'Y')
+        light_object3.rotation_euler = rot_quat.to_euler()
+        light_object3.rotation_euler = (-12.6, 61.19, -0.96)
+        light_object3.data.use_shadow=False
 
         return light_object
 
@@ -952,7 +966,7 @@ class AnimationHandler:
 
         self.create_scene_cameras()
         self.set_box_properties(self.textures[0],self.textures[1], self.textures[2])
-        self.create_light(light_type='SUN', color=(1, 1, 1), energy=10)
+        self.create_light(light_type='SUN', color=(1, 1, 1), energy=8)
         bpy.app.handlers.frame_change_pre.clear()
         bpy.app.handlers.frame_change_post.clear()
         bpy.app.handlers.frame_change_post.append(lambda scene, dpgraph: self.frame_change_handler(scene, dpgraph))
@@ -973,29 +987,34 @@ def main():
 
     root_path = r"C:\Users\PMLS\Desktop\blender stuff"
     output_filename='final'
-    walls_texture_path=r"C:\Users\PMLS\Desktop\blender stuff\textures\walls_texture.webp"
+    walls_texture_path=r"C:\Users\PMLS\Desktop\blender stuff\textures\landscape.jpg"
     floor_texture_path=r"C:\Users\PMLS\Desktop\blender stuff\textures\floor.jpg"
-    ceiling_texture_path=r"C:\Users\PMLS\Desktop\blender stuff\textures\walls_texture.webp"
+    ceiling_texture_path=r"C:\Users\PMLS\Desktop\blender stuff\textures\sky.jpg"
     textures=[walls_texture_path,floor_texture_path,ceiling_texture_path]
     characters_data = [
-        {'name': 'Boy'}, {'name': 'Girl'}
-        
+        {'name': 'david'}, {'name': 'goliath'}
     ]
     actions_list = [
-        {   # Boy's Actions
-           
-            'walking': [(0, 40), Vector((-5, -10, 0.5)), Vector((-5, 0, 0.5))],
-            'dancing girl': [(40, 80), Vector((1, -4, 0)), Vector((1, -4, 0))] 
-        }, 
+        {   # David's Actions
+            'idle': [(0, 80), Vector((1,-5, 0)), Vector((1, -4, 0))],
+            'david before fight': [(80, 190), Vector((1, -5, 0)), Vector((1, -4, 0))],
+            'throwing stones': [(190, 350), Vector((1, -4, 0)), Vector((1, -4, 0))], 
+            'david celebrating': [(350, 550), Vector((1, -4, 0)), Vector((1, -4, 0))]
 
-        {   # Girl's Actions
+        }, 
+        {   # Goliath's Actions
             
-            'walking': [(0, 40), Vector((6,-10, 0.5)), Vector((6, 0, 0.5))],
-            'dancing girl': [(40, 80), Vector((5,0, 0.5)), Vector((5, 0, 0.5))]
+            
+            'goliath before fight': [(0, 80), Vector((-5,25, 0)), Vector((-3, 22, 0))],
+            'idle': [(80, 350), Vector((-5,25, 0)), Vector((-3, 22, 0))],
+            'hit by stone': [(350, 410), Vector((-3, 22, 0)), Vector((-3, 22, 0))], 
+            'falling on the ground': [(410, 470), Vector((-3, 22, 0)), Vector((-3, 22, 0))],
+            'lying on the ground': [(470, 550), Vector((-3, 22, 0)), Vector((-3, 22, 0))]
+
         }
 
     ]
-    background_characters = ['D_Army_1']
+    background_characters = ['G_Army_1', 'G_Army_2','D_Army_1', 'D_Army_2', 'D_Army_3', 'G_Army_3']
     animation_handler = AnimationHandler(root_path, characters_data, actions_list, textures, output_filename, background_characters)
     animation_handler.run()
  
